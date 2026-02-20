@@ -128,7 +128,15 @@ function uploadFile(file) {
         method: "POST",
         body: formData
     })
-        .then(function (res) { return res.json(); })
+        .then(function (res) {
+            if (!res.ok) {
+                // Return a special object if the response is not 200 OK
+                return res.text().then(function (text) {
+                    throw new Error("Server returned " + res.status + ": " + (text.slice(0, 50) || "Empty response"));
+                });
+            }
+            return res.json();
+        })
         .then(function (data) {
             if (data.error) {
                 showStatus("Error: " + data.error, "error");
@@ -140,6 +148,7 @@ function uploadFile(file) {
         })
         .catch(function (err) {
             showStatus("Upload failed: " + err.message, "error");
+            console.error("Upload error details:", err);
         });
 }
 
