@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policy Document Navigator</title>
+    <meta name="description" content="AI-powered government policy analysis tool using RAG">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <div class="nav-logo">⚖️</div>
+            <span class="nav-title">PolicyNavigator</span>
+        </div>
+        <div class="nav-links">
+            <button class="nav-link active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="nav-link" onclick="switchTab('documents')">Documents</button>
+            <button class="nav-link" onclick="switchTab('chat')">Ask Questions</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+
+        <!-- ===== Dashboard Tab ===== -->
+        <section id="tab-dashboard" class="tab-content active">
+            <div class="page-header">
+                <h1>Government Policy Analyzer</h1>
+                <p class="page-subtitle">Upload policy PDFs for AI-powered summarization and question answering</p>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card blue">
+                    <div class="stat-value" id="statDocs">0</div>
+                    <div class="stat-label">DOCUMENTS PROCESSED</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-value" id="statSummaries">0</div>
+                    <div class="stat-label">SUMMARIES GENERATED</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-value" id="statChunks">0</div>
+                    <div class="stat-label">CHUNKS INDEXED</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-value" id="statCompression">75%</div>
+                    <div class="stat-label">AVG COMPRESSION</div>
+                </div>
+            </div>
+
+            <!-- Upload Zone -->
+            <div class="upload-card">
+                <div class="upload-zone" id="dropZone">
+                    <div class="upload-icon">📤</div>
+                    <p class="upload-title">Drop a PDF or Click to Upload</p>
+                    <p class="upload-hint">Max PDF size: 50 MB</p>
+                    <input type="file" id="fileInput" accept=".pdf">
+                </div>
+                <div id="uploadStatus" class="status-message hidden"></div>
+            </div>
+
+            <!-- Recent Documents (on dashboard) -->
+            <div class="section-card" id="recentDocsSection" style="display:none;">
+                <h2>Recent Documents</h2>
+                <div id="recentDocs"></div>
+            </div>
+        </section>
+
+        <!-- ===== Documents Tab ===== -->
+        <section id="tab-documents" class="tab-content">
+            <div class="page-header">
+                <h1>Document Library</h1>
+                <p class="page-subtitle">Browse uploaded policy documents and view AI-generated summaries</p>
+            </div>
+            <div class="section-card">
+                <div id="docList">
+                    <p class="empty-state">No documents uploaded yet. Go to Dashboard to upload one!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== Chat Tab ===== -->
+        <section id="tab-chat" class="tab-content">
+            <div class="page-header">
+                <h1>Ask About Policies</h1>
+                <p class="page-subtitle">Ask questions about uploaded documents — AI will find answers from the policy
+                    text</p>
+            </div>
+            <div class="chat-card">
+                <div class="chat-controls">
+                    <select id="docSelect">
+                        <option value="">All Documents</option>
+                    </select>
+                </div>
+
+                <div id="chatMessages" class="chat-messages">
+                    <div class="message bot-message">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-text">
+                            Hello! Upload a policy document and ask me anything about it.
+                            I'll help you understand complex government policies in plain language.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <input type="text" id="questionInput" placeholder="Ask a question about the policy..."
+                        autocomplete="off">
+                    <button id="sendBtn" onclick="sendQuestion()">Send</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Summary Modal -->
+    <div id="summaryModal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeSummaryModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Document Summary</h2>
+                <button class="modal-close" onclick="closeSummaryModal()">&times;</button>
+            </div>
+            <div id="modalBody" class="modal-body">
+                <div class="loader">⏳ Generating summary...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
