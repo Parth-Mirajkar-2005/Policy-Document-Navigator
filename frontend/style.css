@@ -53,7 +53,7 @@ body {
 
 .nav-links {
     display: flex;
-    gap: 0.25rem;
+    gap: 2rem;
 }
 
 .nav-link {
@@ -81,9 +81,9 @@ body {
 
 /* ===== Main Content ===== */
 main {
-    max-width: 960px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 1.5rem;
+    padding: 2rem 2.5rem;
 }
 
 .tab-content {
