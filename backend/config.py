@@ -1,9 +1,13 @@
 import os
 from dotenv import load_dotenv
 
-# Load .env from the project root
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+# Base directory = the backend folder
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-DOCS_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'documents.json')
+# Load .env from the project root (one level up from backend/)
+load_dotenv(os.path.join(BASE_DIR, '..', '.env'))
+
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+DOCS_JSON = os.path.join(BASE_DIR, 'documents.json')
+

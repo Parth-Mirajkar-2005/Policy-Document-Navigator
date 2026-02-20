@@ -10,14 +10,24 @@ from collections import Counter
 from groq import Groq
 import config
 
-# Initialize Groq client
-client = Groq(api_key=config.GROQ_API_KEY)
+# Initialize Groq client lazily
+_client = None
+
+def get_client():
+    global _client
+    if _client is None:
+        if not config.GROQ_API_KEY:
+            raise ValueError("GROQ_API_KEY is not set in environment variables.")
+        _client = Groq(api_key=config.GROQ_API_KEY)
+    return _client
 
 # Model to use (Groq free tier models — all fast and reliable)
 MODEL = "llama-3.3-70b-versatile"
 
 # Path to the chunk store file
-STORE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vector_store.json')
+# Base directory = the backend folder (same logic as config.py)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STORE_PATH = os.path.join(BASE_DIR, 'vector_store.json')
 
 
 # ------- Store (JSON-based) -------
@@ -25,8 +35,11 @@ STORE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'vector_st
 def load_store():
     """Load the chunk store from disk."""
     if os.path.exists(STORE_PATH):
-        with open(STORE_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(STORE_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return {}
     return {}
 
 
@@ -130,7 +143,7 @@ def query_documents(question, doc_id=None, n_results=5):
 
 def call_llm(prompt):
     """Call Groq LLM for text generation."""
-    response = client.chat.completions.create(
+    response = get_client().chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
