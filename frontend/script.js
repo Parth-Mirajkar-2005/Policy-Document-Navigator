@@ -206,8 +206,17 @@ function viewSummary(docId, title) {
     modal.classList.remove("hidden");
 
     fetch(API + "/api/summary/" + docId)
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
+        .then(function (res) {
+            if (!res.ok) {
+                throw new Error("Server returned " + res.status);
+            }
+            return res.text();
+        })
+        .then(function (text) {
+            if (!text || !text.trim()) {
+                throw new Error("Empty response from server — try again in a moment.");
+            }
+            var data = JSON.parse(text);
             if (data.error) {
                 modalBody.textContent = "Error: " + data.error;
             } else {

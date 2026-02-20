@@ -6,6 +6,8 @@ Groq is free, extremely fast, and has very generous rate limits.
 import json
 import os
 import math
+import time
+import logging
 from collections import Counter
 from groq import Groq
 import config
@@ -141,15 +143,25 @@ def query_documents(question, doc_id=None, n_results=5):
 
 # ------- Generation (Groq) -------
 
-def call_llm(prompt):
-    """Call Groq LLM for text generation."""
-    response = get_client().chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=2048
-    )
-    return response.choices[0].message.content
+logger = logging.getLogger(__name__)
+
+def call_llm(prompt, retries=3):
+    """Call Groq LLM for text generation with automatic retry."""
+    for attempt in range(retries):
+        try:
+            response = get_client().chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=2048
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.warning(f"Groq API attempt {attempt + 1}/{retries} failed: {e}")
+            if attempt < retries - 1:
+                time.sleep(2 ** attempt)  # 1s, 2s backoff
+            else:
+                raise
 
 
 def generate_answer(question, context_chunks):
@@ -174,7 +186,7 @@ Answer:"""
 
 def generate_summary(text):
     """Generate a plain-language summary of a policy document."""
-    max_chars = 15000
+    max_chars = 10000
     if len(text) > max_chars:
         text = text[:max_chars] + "\n\n[Document truncated for summarization...]"
 
