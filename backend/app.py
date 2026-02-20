@@ -93,6 +93,9 @@ def upload():
     logger.info(f"Received upload request: {file.filename}")
 
     try:
+        # Ensure upload directory exists (Render has ephemeral filesystem)
+        os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
+
         # Save the uploaded file
         doc_id = str(uuid.uuid4())[:8]
         filepath = os.path.join(config.UPLOAD_FOLDER, f"{doc_id}.pdf")
