@@ -132,7 +132,7 @@ def delete_document(doc_id):
 
 @app.route('/api/query', methods=['POST'])
 def query():
-    """RAG query — retrieve relevant chunks and generate an answer."""
+    """Answer questions based on the document summary."""
     data = request.json
     if not data or 'question' not in data:
         return jsonify({'error': 'No question provided'}), 400
@@ -141,18 +141,52 @@ def query():
     doc_id = data.get('doc_id')  # Optional: scope to a specific document
 
     try:
-        chunks = query_documents(question, doc_id=doc_id)
-        if not chunks:
+        docs = load_documents()
+
+        if not docs:
             return jsonify({
-                'answer': 'No relevant information found. Please upload a document first.',
+                'answer': 'No documents uploaded yet. Please upload a document first.',
                 'sources': []
             })
 
-        answer = generate_answer(question, chunks)
+        # Collect summaries to answer from
+        summaries = []
+
+        if doc_id:
+            # Single document
+            if doc_id not in docs:
+                return jsonify({'error': 'Document not found'}), 404
+
+            doc = docs[doc_id]
+            summary = doc.get('summary')
+
+            # Auto-generate summary if not available
+            if not summary:
+                filepath = os.path.join(config.UPLOAD_FOLDER, f"{doc_id}.pdf")
+                text, _ = extract_text_from_pdf(filepath)
+                summary = generate_summary(text)
+                docs[doc_id]['summary'] = summary
+                save_documents(docs)
+
+            summaries.append(f"Document: {doc['title']}\n{summary}")
+        else:
+            # All documents
+            for did, doc in docs.items():
+                summary = doc.get('summary')
+                if not summary:
+                    filepath = os.path.join(config.UPLOAD_FOLDER, f"{did}.pdf")
+                    text, _ = extract_text_from_pdf(filepath)
+                    summary = generate_summary(text)
+                    docs[did]['summary'] = summary
+                    save_documents(docs)
+                summaries.append(f"Document: {doc['title']}\n{summary}")
+
+        combined = "\n\n---\n\n".join(summaries)
+        answer = generate_answer(question, [combined])
 
         return jsonify({
             'answer': answer,
-            'sources': chunks[:3]
+            'sources': []
         })
 
     except Exception as e:
