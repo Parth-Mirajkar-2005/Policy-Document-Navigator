@@ -71,16 +71,6 @@ def upload():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
-@app.route('/api/upload', methods=['POST'])
-def upload():
-    """Upload a PDF, extract text, chunk it, embed, and store in ChromaDB."""
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
-
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-
     if not file.filename.lower().endswith('.pdf'):
         return jsonify({'error': 'Only PDF files are supported'}), 400
 
