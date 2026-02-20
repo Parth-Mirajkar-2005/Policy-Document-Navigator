@@ -43,6 +43,20 @@ def save_documents(docs):
         json.dump(docs, f, indent=2)
 
 
+# --- Error Handlers ---
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle all exceptions and return JSON instead of HTML."""
+    # Pass through HTTP errors
+    if hasattr(e, 'code'):
+        return jsonify({'error': str(e)}), e.code
+    
+    # Handle non-HTTP exceptions
+    logger.exception(f"Unhandled exception: {str(e)}")
+    return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+
+
 # --- Routes ---
 
 @app.route('/')
@@ -54,9 +68,11 @@ def index():
 @app.route('/api/health')
 def health():
     """Check if the API is up and running."""
+    key_found = bool(config.GROQ_API_KEY) and config.GROQ_API_KEY != 'your_groq_api_key_here'
     return jsonify({
         'status': 'healthy',
-        'groq_configured': bool(config.GROQ_API_KEY),
+        'groq_configured': key_found,
+        'message': 'API key found' if key_found else 'MISSING GROQ_API_KEY! Please add it to Render Environment variables.',
         'timestamp': datetime.now().isoformat()
     })
 
