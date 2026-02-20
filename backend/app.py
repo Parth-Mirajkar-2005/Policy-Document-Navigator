@@ -7,17 +7,23 @@ from flask_cors import CORS
 import os
 import json
 import uuid
+import logging
 from datetime import datetime
 
 import config
 from ingestion import extract_text_from_pdf, chunk_text
 from rag import add_document, remove_document, query_documents, generate_answer, generate_summary
 
+# --- Logging Setup ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 # --- App Setup ---
 frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend')
 app = Flask(__name__, static_folder=frontend_dir, static_url_path='')
 CORS(app)
 
+logger.info(f"Initializing app. Upload folder: {config.UPLOAD_FOLDER}")
 os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -45,6 +51,26 @@ def index():
     return send_from_directory(app.static_folder, 'index.html')
 
 
+@app.route('/api/health')
+def health():
+    """Check if the API is up and running."""
+    return jsonify({
+        'status': 'healthy',
+        'groq_configured': bool(config.GROQ_API_KEY),
+        'timestamp': datetime.now().isoformat()
+    })
+
+
+@app.route('/api/upload', methods=['POST'])
+def upload():
+    """Upload a PDF, extract text, chunk it, embed, and store in ChromaDB."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
 @app.route('/api/upload', methods=['POST'])
 def upload():
     """Upload a PDF, extract text, chunk it, embed, and store in ChromaDB."""
@@ -58,23 +84,33 @@ def upload():
     if not file.filename.lower().endswith('.pdf'):
         return jsonify({'error': 'Only PDF files are supported'}), 400
 
+    logger.info(f"Received upload request: {file.filename}")
+
     try:
         # Save the uploaded file
         doc_id = str(uuid.uuid4())[:8]
         filepath = os.path.join(config.UPLOAD_FOLDER, f"{doc_id}.pdf")
+        logger.info(f"Saving file to {filepath}")
         file.save(filepath)
 
         # Extract text from PDF
+        logger.info("Extracting text from PDF...")
         text, page_count = extract_text_from_pdf(filepath)
-        if not text.strip():
-            os.remove(filepath)
-            return jsonify({'error': 'Could not extract text from this PDF'}), 400
+        logger.info(f"Extracted {len(text)} characters from {page_count} pages.")
 
-        # Chunk and embed
+        if not text.strip():
+            logger.warning("Extraction returned empty text.")
+            os.remove(filepath)
+            return jsonify({'error': 'Could not extract text from this PDF (it might be scanned or empty)'}), 400
+
+        # Chunk and store
+        logger.info(f"Chunking text into chunks...")
         chunks = chunk_text(text)
+        logger.info(f"Adding {len(chunks)} chunks to store for doc_id {doc_id}")
         add_document(doc_id, chunks)
 
         # Save metadata
+        logger.info("Saving document metadata...")
         docs = load_documents()
         docs[doc_id] = {
             'id': doc_id,
@@ -86,6 +122,7 @@ def upload():
             'summary': None
         }
         save_documents(docs)
+        logger.info("Upload and processing complete.")
 
         return jsonify({
             'id': doc_id,
@@ -94,6 +131,7 @@ def upload():
         })
 
     except Exception as e:
+        logger.exception(f"Exception during upload processing: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
